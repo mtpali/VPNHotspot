@@ -28,7 +28,7 @@ wire-runtime = { module = "com.squareup.wire:wire-runtime", version.ref = "wire"
 zxing-core = "com.google.zxing:core:3.5.4"
 
 [plugins]
-android-application = "com.android.application:9.3.1"
+android-application = "com.android.application:9.4.1"
 compose-compiler = "org.jetbrains.kotlin.plugin.compose:2.4.10"
 kotlin-parcelize = "org.jetbrains.kotlin.plugin.parcelize:2.4.10"
 ksp = "com.google.devtools.ksp:2.3.10"
