@@ -38,7 +38,10 @@ bookkeeping:
 
 Each notification consumer owns a multicast-only rtnetlink connection and a
 separate request connection where needed. Session routing retains its request
-connection for the session lifetime; one-shot commands open their own.
+connection for the session lifetime; one-shot commands open their own. Replacement
+commands box their session config to keep the owner command channel messages
+small after adding the Android-9 DNS server lists. Ordering, acknowledgements,
+cancellation and routing cleanup are unchanged.
 
 The daemon does not listen for arbitrary clients. The app-side controller owns
 the listening socket and accepts only a peer whose Unix socket credentials have

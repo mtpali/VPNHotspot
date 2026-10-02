@@ -19,7 +19,7 @@ pub(super) struct SessionControl {
 
 pub(super) enum SessionCommand {
     Replace {
-        config: SessionConfig,
+        config: Box<SessionConfig>,
         reply: oneshot::Sender<io::Result<()>>,
     },
     ReadCounters {
@@ -119,7 +119,10 @@ impl SessionControl {
     ) -> io::Result<PendingSessionReply<io::Result<()>>> {
         let (reply, receiver) = oneshot::channel();
         self.commands
-            .send(SessionCommand::Replace { config, reply })
+            .send(SessionCommand::Replace {
+                config: Box::new(config),
+                reply,
+            })
             .map_err(|_| session_closed_error())?;
         Ok(PendingSessionReply { reply: receiver })
     }
@@ -169,7 +172,7 @@ async fn handle_session_command(session: &mut Option<Session>, command: SessionC
     match command {
         SessionCommand::Replace { config, reply } => {
             let result = match session.as_mut() {
-                Some(session) => session.replace_config(config).await,
+                Some(session) => session.replace_config(*config).await,
                 None => Err(session_closed_error()),
             };
             let _ = reply.send(result);
