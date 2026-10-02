@@ -59,6 +59,9 @@ jobs:
         working-directory: mobile/src/main/rust/vpnhotspotd
         run: cargo test --locked
 
+      - name: Compile Android instrumentation tests
+        run: ./gradlew :mobile:compileDebugAndroidTestKotlin -PtargetAbis=x86_64 --no-daemon
+
       - name: Run build and tests
         run: ./gradlew :mobile:assembleDebug :mobile:testDebugUnitTest :mobile:lintDebug :mobile:assembleRelease -PtargetAbis=armeabi-v7a --no-daemon
 

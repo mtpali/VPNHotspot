@@ -242,6 +242,7 @@ ksp {
 
 dependencies {
     compileOnly(files(hiddenApiStubsJar))
+    androidTestCompileOnly(files(hiddenApiStubsJar))
     ksp(libs.room.compiler)
     implementation(platform(libs.compose.bom))
     implementation("androidx.compose.material3:material3")
