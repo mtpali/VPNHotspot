@@ -63,7 +63,7 @@
         android:icon="@mipmap/ic_launcher"
         android:localeConfig="@xml/locales_config"
         android:enableOnBackInvokedCallback="true"
-        android:supportsRtl="true"
+        android:supportsRtl="false"
         tools:ignore="GoogleAppIndexingWarning">
 
         <activity

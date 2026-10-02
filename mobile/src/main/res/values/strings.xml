@@ -14,7 +14,6 @@
 
     <string name="tethering_watch_reconnect">Watch for reconnect</string>
 
-    <string name="tethering_manage">Manage system tethering…</string>
     <string name="tethering_manage_offload_enabled">Please disable Tethering hardware acceleration in Developer options
         if VPN tethering does not work.</string>
     <!-- Android translation-index match: packages/apps/Settings/res/values/strings.xml:4057 -->

@@ -16,7 +16,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -53,7 +52,6 @@ import be.mygod.vpnhotspot.TetheringService
 import be.mygod.vpnhotspot.manage.BluetoothTethering
 import be.mygod.vpnhotspot.manage.ManageBar
 import be.mygod.vpnhotspot.net.MacAddressCompat
-import be.mygod.vpnhotspot.net.TetherOffloadManager
 import be.mygod.vpnhotspot.net.TetherStates
 import be.mygod.vpnhotspot.net.TetherType
 import be.mygod.vpnhotspot.net.TetheringManagerCompat
@@ -90,10 +88,6 @@ fun TetheringScreen(
     val inspectionMode = LocalInspectionMode.current
     val linkStyles = rememberNetworkAddressLinkStyles()
     val tetherTypeVersion by if (inspectionMode) remember { mutableIntStateOf(0) } else rememberTetherTypeVersion()
-    var manageBarVersion by remember { mutableIntStateOf(0) }
-    val manageOffloadEnabled = if (inspectionMode) false else remember(manageBarVersion) {
-        TetherOffloadManager.enabled
-    }
     val ifaceLookup = remember(
         tetherStates,
         tetheringServiceState,
@@ -135,7 +129,6 @@ fun TetheringScreen(
         fun refreshBluetooth() {
             if (resumed) return
             resumed = true
-            manageBarVersion++
             if (bluetoothTethering == null || Build.VERSION.SDK_INT < 31) return
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) ==
                 PackageManager.PERMISSION_GRANTED) {
@@ -166,7 +159,6 @@ fun TetheringScreen(
         isRefreshing = false,
         onRefresh = {
             onRefresh()
-            manageBarVersion++
             bluetoothVersion++
         },
         modifier = Modifier.fillMaxSize(),
@@ -214,17 +206,6 @@ fun TetheringScreen(
                 }
             }
             preferenceGroup(key = "manage_tethering") {
-                row(R.string.tethering_manage) {
-                    PreferenceRow(
-                        icon = R.drawable.ic_add,
-                        iconTint = MaterialTheme.colorScheme.secondary,
-                        title = stringResource(R.string.tethering_manage),
-                        summary = if (manageOffloadEnabled) {
-                            stringResource(R.string.tethering_manage_offload_enabled)
-                        } else null,
-                        onClick = { ManageBar.start(context::startActivity) },
-                    )
-                }
                 row(R.string.tethering_manage_wifi) {
                     TetheringTypeRow(
                         icon = R.drawable.ic_network_wifi,

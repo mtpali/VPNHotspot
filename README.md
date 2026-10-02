@@ -14,6 +14,7 @@ Stop active VPN tethering before uninstalling or switching builds.
 - Removed repeater, temporary Wi-Fi hotspot and static-IP UI, services, quick-setting tiles,
   configuration paths, Supplicant AIDL generation and associated source/resources.
 - Removed service auto-start and its boot receiver, debug export, donation and project-homepage UI.
+- Removed the Manage system tethering shortcut from the Tethering screen.
 - Removed the open-source-license screen; distribution notices remain in the APK assets and this source.
 - Removed Firebase analytics, Crashlytics, LeakCanary and its debug telemetry installer,
   the browser helper and Google license dependencies.
@@ -21,6 +22,8 @@ Stop active VPN tethering before uninstalling or switching builds.
   R8 renames the decoder and prevents it being folded into literal contact strings.
   A public source fork and a locally running APK can always be modified; this is obfuscation, not tamper-proofing.
 - OLED black surfaces and white foregrounds, no dynamic colors, instant page transitions, no navigation shadow.
+- English only: translated and regional resource folders removed, English-only locale configuration,
+  dependency resources filtered to English, and debug pseudo-locales disabled.
 - Launcher uses the supplied icon with a 72dp square inside the 108dp adaptive canvas for wider safe margins.
   The monochrome icon is scaled to match; both are 25% smaller than the first custom release.
 - Clients show an estimated brand/model above MAC, from DHCP hostname and 6,614 offline IEEE OUI prefixes.

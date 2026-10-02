@@ -146,6 +146,7 @@ android {
         targetSdk = 37
         versionCode = 2013
         versionName = "3.0.8-oled.2"
+        resourceConfigurations += "en"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     splits {
@@ -161,9 +162,6 @@ android {
         compose = true
     }
     buildTypes {
-        debug {
-            isPseudoLocalesEnabled = true
-        }
         release {
             isShrinkResources = true
             isMinifyEnabled = true
