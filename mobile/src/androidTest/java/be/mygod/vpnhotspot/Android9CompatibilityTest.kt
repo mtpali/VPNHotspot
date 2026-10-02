@@ -3,6 +3,7 @@ package be.mygod.vpnhotspot
 import android.net.LocalServerSocket
 import android.os.Build
 import android.os.Process
+import android.os.ParcelFileDescriptor
 import androidx.test.core.app.ActivityScenario
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
@@ -48,16 +49,19 @@ class Android9CompatibilityTest {
 
     @Test(timeout = 30_000)
     fun extractedNativeDaemonStartsAndRepliesWithoutNewerElfImports() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val context = instrumentation.targetContext
         val path = (context.classLoader as BaseDexClassLoader).findLibrary("vpnhotspotd")
         assertNotNull(path)
         assertTrue("Daemon must be extracted on API 28", File(path!!).isFile)
         val name = "${context.packageName}.android9.test.${Process.myPid()}"
         val acceptor = Executors.newSingleThreadExecutor()
         LocalServerSocket(name).use { server ->
-            val log = File(context.cacheDir, "android9-daemon-test.log")
-            val process = ProcessBuilder(path, name, Build.VERSION.SDK_INT.toString())
-                .redirectErrorStream(true).redirectOutput(log).start()
+            // A real daemon is launched by the root service, outside the app zygote seccomp filter.
+            // The API-28 image loads system UBSan constructors that use readlink during exec.
+            val output = instrumentation.uiAutomation.executeShellCommand(
+                "$path $name ${Build.VERSION.SDK_INT}")
+            val daemonOutput = ParcelFileDescriptor.AutoCloseInputStream(output)
             try {
                 acceptor.submit<android.net.LocalSocket> { server.accept() }.get(10, TimeUnit.SECONDS).use { socket ->
                     socket.soTimeout = 5_000
@@ -76,10 +80,10 @@ class Android9CompatibilityTest {
                     assertNotNull(reply.traffic_counters)
                     assertTrue(reply.traffic_counters!!.counters.isEmpty())
                 }
-                assertTrue("Daemon did not stop after disconnect: ${log.readText()}", process.waitFor(5, TimeUnit.SECONDS))
-                assertEquals(log.readText(), 0, process.exitValue())
+                // EOF verifies that the externally launched daemon stopped after IPC disconnect.
+                daemonOutput.readBytes()
             } finally {
-                process.destroy()
+                daemonOutput.close()
                 acceptor.shutdownNow()
             }
         }
