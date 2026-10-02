@@ -24,6 +24,7 @@ Stop active VPN tethering before uninstalling or switching builds.
 - OLED black surfaces and white foregrounds, no dynamic colors, instant page transitions, no navigation shadow.
 - English only: translated and regional resource folders removed, English-only locale configuration,
   dependency resources filtered to English, and debug pseudo-locales disabled.
+  Activity resources use English so platform dialog labels and numbers stay English on non-English devices.
 - Launcher uses the supplied icon with a 72dp square inside the 108dp adaptive canvas for wider safe margins.
   The monochrome icon is scaled to match; both are 25% smaller than the first custom release.
 - Clients show an estimated brand/model above MAC, from DHCP hostname and 6,614 offline IEEE OUI prefixes.

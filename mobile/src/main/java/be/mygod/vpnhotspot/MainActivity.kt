@@ -1,5 +1,7 @@
 package be.mygod.vpnhotspot
 
+import android.content.Context
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,8 +17,15 @@ import be.mygod.vpnhotspot.net.wifi.WifiDoubleLock
 import be.mygod.vpnhotspot.ui.VpnHotspotApp
 import be.mygod.vpnhotspot.ui.theme.VpnHotspotTheme
 import be.mygod.vpnhotspot.util.launchUrl
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(newBase.createConfigurationContext(
+            Configuration(newBase.resources.configuration).apply { setLocale(Locale.ENGLISH) },
+        ))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge(
             statusBarStyle = androidx.activity.SystemBarStyle.dark(android.graphics.Color.BLACK),
