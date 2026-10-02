@@ -1,6 +1,7 @@
 package be.mygod.vpnhotspot
 
 import android.net.LocalServerSocket
+import android.os.Build
 import android.os.Process
 import androidx.test.core.app.ActivityScenario
 import androidx.test.filters.SdkSuppress
@@ -55,7 +56,8 @@ class Android9CompatibilityTest {
         val acceptor = Executors.newSingleThreadExecutor()
         LocalServerSocket(name).use { server ->
             val log = File(context.cacheDir, "android9-daemon-test.log")
-            val process = ProcessBuilder(path, name).redirectErrorStream(true).redirectOutput(log).start()
+            val process = ProcessBuilder(path, name, Build.VERSION.SDK_INT.toString())
+                .redirectErrorStream(true).redirectOutput(log).start()
             try {
                 acceptor.submit<android.net.LocalSocket> { server.accept() }.get(10, TimeUnit.SECONDS).use { socket ->
                     socket.soTimeout = 5_000

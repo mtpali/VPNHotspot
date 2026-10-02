@@ -1,5 +1,6 @@
 package be.mygod.vpnhotspot.root.daemon
 
+import android.os.Build
 import android.os.ParcelFileDescriptor
 import be.mygod.librootkotlinx.RootCommandNoResult
 import be.mygod.librootkotlinx.io.startPipes
@@ -16,7 +17,7 @@ data class RunDaemon(
     override suspend fun execute() = null.also {
         stdout.use { stdout ->
             stderr.use { stderr ->
-                ProcessBuilder(command + socketName).apply {
+                ProcessBuilder(command + socketName + Build.VERSION.SDK_INT.toString()).apply {
                     environment()["RUST_BACKTRACE"] = "1"
                     redirectInput(ProcessBuilder.Redirect.from(File("/dev/null")))
                     // Opened before fork, then dup2'd onto the child stdio fds.

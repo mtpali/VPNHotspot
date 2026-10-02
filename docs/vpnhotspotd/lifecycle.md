@@ -14,7 +14,7 @@ APK packaging compresses native libraries and requests installation-time extract
 On API 28, the root command executes that ELF file directly: Android 9's linker does
 not support acting as an executable launcher. On API 29+, the root command runs
 `/system/bin/linker[64] <native-library-path>`. Both paths pass exactly the socket
-name as the daemon argument, apply the same ABI check, and use the same control
+name and `Build.VERSION.SDK_INT` as the daemon arguments, apply the same ABI check, and use the same control
 connection ownership and shutdown. No private executable copy or persistent
 startup artifact is created. It creates:
 
@@ -22,7 +22,13 @@ startup artifact is created. It creates:
 - stdout and stderr pipes that are drained into Timber;
 - one root command invocation that starts the daemon with the socket name.
 
-The Rust entry point accepts exactly one argument: that socket name. It connects
+The Rust entry point accepts exactly two arguments: that socket name and the
+Android API level supplied by the root launcher's public `Build.VERSION.SDK_INT`.
+It rejects a missing, malformed or pre-28 API level and initializes one immutable
+process-wide value before any control tasks start. This avoids importing
+`android_get_device_api_level`, whose exported NDK symbol is absent before API 29,
+and keeps DNS selection, routing priorities and optional IPsec probes consistent.
+It connects
 back to the abstract Unix socket, splits the stream, starts a writer task for
 outbound frames, initializes the nonfatal reporter, and builds process-wide
 bookkeeping:

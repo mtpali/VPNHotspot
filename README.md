@@ -41,6 +41,8 @@ Stop active VPN tethering before uninstalling or switching builds.
 - Native build input tracking excludes Cargo target caches, avoiding unnecessary rebuilds.
 - Android 9 support: native binaries are built for API 28, compressed and extracted at install time.
   API 28 runs the extracted ELF directly; newer versions retain the linker launcher.
+  The root launcher passes `Build.VERSION.SDK_INT` once, avoiding the API-29-only
+  exported `android_get_device_api_level` symbol in the API-28 binary.
   Raw resolver functions introduced in Android 10 are loaded only on API 29+; Android 9 sends
   DNS queries to the selected network's configured DNS servers using network-bound UDP/TCP.
   It never substitutes public DNS or retries on a different upstream network. Android 9 does not
