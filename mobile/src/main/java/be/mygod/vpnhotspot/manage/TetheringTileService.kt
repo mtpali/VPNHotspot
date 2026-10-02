@@ -81,7 +81,7 @@ sealed class TetheringTileService : NetlinkNeighbourMonitoringTileService() {
 
     override fun updateTile() {
         qsTile?.run {
-            subtitle = null
+            if (Build.VERSION.SDK_INT >= 29) subtitle = null
             val interested = interested
             when {
                 interested == null -> {
@@ -193,7 +193,7 @@ sealed class TetheringTileService : NetlinkNeighbourMonitoringTileService() {
 
         override fun updateTile() {
             qsTile?.run {
-                subtitle = null
+                if (Build.VERSION.SDK_INT >= 29) subtitle = null
                 val interested = interested
                 if (interested == null) {
                     state = Tile.STATE_UNAVAILABLE
@@ -212,7 +212,7 @@ sealed class TetheringTileService : NetlinkNeighbourMonitoringTileService() {
                     null -> {
                         state = Tile.STATE_INACTIVE
                         icon = tileOff
-                        subtitle = tethering?.activeFailureCause?.readableMessage
+                        if (Build.VERSION.SDK_INT >= 29) subtitle = tethering?.activeFailureCause?.readableMessage
                     }
                 }
                 label = getText(labelString)

@@ -1,5 +1,6 @@
 package be.mygod.vpnhotspot.manage
 
+import android.os.Build
 import android.service.quicksettings.Tile
 import be.mygod.vpnhotspot.R
 import be.mygod.vpnhotspot.net.NetlinkNeighbour
@@ -34,6 +35,7 @@ abstract class NetlinkNeighbourMonitoringTileService : KillableTileService() {
     }
 
     protected fun Tile.subtitleDevices(filter: (String) -> Boolean) {
+        if (Build.VERSION.SDK_INT < 29) return
         val size = neighbours
                 .mapNotNull { if (filter(it.dev)) it.validClientMac else null }
                 .distinct()
