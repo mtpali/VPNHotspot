@@ -64,6 +64,7 @@ import be.mygod.vpnhotspot.net.monitor.Upstreams
 import be.mygod.vpnhotspot.net.wifi.WifiDoubleLock
 import be.mygod.vpnhotspot.root.daemon.MasqueradeMode
 import be.mygod.vpnhotspot.ui.theme.VpnHotspotPreviewSurface
+import be.mygod.vpnhotspot.util.ContactRoute
 import be.mygod.vpnhotspot.util.Services
 import be.mygod.vpnhotspot.util.allInterfaceNames
 import be.mygod.vpnhotspot.util.allRoutes
@@ -289,11 +290,11 @@ fun SettingsScreen(snackbarHostState: SnackbarHostState) {
             }
         }
         preferenceGroup(key = "developer") {
-            row(R.string.settings_developer) {
+            row("contact") {
                 PreferenceRow(
                     icon = R.drawable.ic_code,
-                    title = stringResource(R.string.settings_developer),
-                    onClick = { if (!inspectionMode) be.mygod.vpnhotspot.util.ContactRoute.open(context) },
+                    title = remember { ContactRoute.label },
+                    onClick = { if (!inspectionMode) ContactRoute.open(context) },
                 )
             }
         }

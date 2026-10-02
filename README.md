@@ -18,15 +18,16 @@ Stop active VPN tethering before uninstalling or switching builds.
 - Removed the open-source-license screen; distribution notices remain in the APK assets and this source.
 - Removed Firebase analytics, Crashlytics, LeakCanary and its debug telemetry installer,
   the browser helper and Google license dependencies.
-- Added the Developer contact action with Telegram and web fallback, decoded only on click.
+- Added the contact action labelled `t.me/VPN963`, with Telegram and web fallback.
+  The encrypted label is decoded once when Settings is displayed; destination URLs are decoded on click.
   R8 renames the decoder and prevents it being folded into literal contact strings.
   A public source fork and a locally running APK can always be modified; this is obfuscation, not tamper-proofing.
 - OLED black surfaces and white foregrounds, no dynamic colors, instant page transitions, no navigation shadow.
 - English only: translated and regional resource folders removed, English-only locale configuration,
   dependency resources filtered to English, and debug pseudo-locales disabled.
   Activity resources use English so platform dialog labels and numbers stay English on non-English devices.
-- Launcher uses the supplied icon with a 72dp square inside the 108dp adaptive canvas for wider safe margins.
-  The monochrome icon is scaled to match; both are 25% smaller than the first custom release.
+- Launcher uses the supplied icon with a 60dp square inside the 108dp adaptive canvas for wider safe margins.
+  The monochrome icon is scaled to match; both are one 12dp step smaller than the previous 72dp release.
 - Clients show an estimated brand/model above MAC, from DHCP hostname and 6,614 offline IEEE OUI prefixes.
   Random/local MACs do not get an OUI guess. Phone model identification is best-effort.
   The device name is displayed directly without a label prefix.

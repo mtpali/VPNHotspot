@@ -374,7 +374,6 @@
     <!-- Android translation-index match: packages/apps/Settings/res/values/strings.xml:579 -->
     <string name="wifi_save">Save</string>
 
-    <string name="settings_developer">Developer</string>
     <string name="wifi_supported_features">Supported features:</string>
     <string name="clients_device_unknown">Device unknown / private MAC</string>
     <string name="clients_usage_total">Total recorded: %1$s\nUpload: %2$s · Download: %3$s</string>
