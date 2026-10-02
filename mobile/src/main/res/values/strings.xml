@@ -377,7 +377,6 @@
 
     <string name="settings_developer">Developer</string>
     <string name="wifi_supported_features">Supported features:</string>
-    <string name="clients_device_estimate">Estimated device: %1$s</string>
     <string name="clients_device_unknown">Device unknown / private MAC</string>
     <string name="clients_usage_total">Total recorded: %1$s\nUpload: %2$s · Download: %3$s</string>
     <string name="clients_usage_waiting">Usage: waiting for recorded traffic</string>

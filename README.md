@@ -21,9 +21,11 @@ Stop active VPN tethering before uninstalling or switching builds.
   R8 renames the decoder and prevents it being folded into literal contact strings.
   A public source fork and a locally running APK can always be modified; this is obfuscation, not tamper-proofing.
 - OLED black surfaces and white foregrounds, no dynamic colors, instant page transitions, no navigation shadow.
-- Launcher uses the supplied icon with a 96dp square inside the 108dp adaptive canvas to preserve safe margins.
+- Launcher uses the supplied icon with a 72dp square inside the 108dp adaptive canvas for wider safe margins.
+  The monochrome icon is scaled to match; both are 25% smaller than the first custom release.
 - Clients show an estimated brand/model above MAC, from DHCP hostname and 6,614 offline IEEE OUI prefixes.
   Random/local MACs do not get an OUI guess. Phone model identification is best-effort.
+  The device name is displayed directly without a label prefix.
 - Clients show speed and cumulative recorded upload/download. Counters refresh every 5 seconds while
   Clients is visible, and once per minute in the background. No extra polling service or per-phone requests.
   Usage includes previous recorded sessions; uncounted traffic is described in `docs/vpnhotspotd/traffic.md`.

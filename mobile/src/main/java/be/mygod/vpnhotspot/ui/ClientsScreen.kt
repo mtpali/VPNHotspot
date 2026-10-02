@@ -179,8 +179,7 @@ private fun ClientRow(
     val neighbourStateValid = stringResource(R.string.connected_state_valid)
     val neighbourStateFailed = stringResource(R.string.connected_state_failed)
     val nickname = record.nickname
-    val deviceLabel = row.deviceHint?.let { stringResource(R.string.clients_device_estimate, it) }
-        ?: stringResource(R.string.clients_device_unknown)
+    val deviceLabel = row.deviceHint ?: stringResource(R.string.clients_device_unknown)
     val title = buildAnnotatedString {
         if (nickname.isNotEmpty()) append(nickname) else append(deviceLabel)
     }

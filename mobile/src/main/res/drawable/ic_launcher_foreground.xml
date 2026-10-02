@@ -1,5 +1,5 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:width="96dp" android:height="96dp" android:gravity="center">
+    <item android:width="72dp" android:height="72dp" android:gravity="center">
         <bitmap android:src="@drawable/ic_launcher_custom" android:gravity="fill" android:filter="true"/>
     </item>
 </layer-list>

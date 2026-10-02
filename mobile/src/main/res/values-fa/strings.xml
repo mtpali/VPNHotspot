@@ -309,7 +309,6 @@
   <string name="wifi_save">ذخیره‌</string>
     <string name="settings_developer">Developer</string>
     <string name="wifi_supported_features">قابلیت‌های پشتیبانی‌شده:</string>
-    <string name="clients_device_estimate">دستگاه احتمالی: %1$s</string>
     <string name="clients_device_unknown">دستگاه ناشناس / آدرس MAC خصوصی</string>
     <string name="clients_usage_total">کل مصرف ثبت‌شده: %1$s\nارسال: %2$s · دریافت: %3$s</string>
     <string name="clients_usage_waiting">مصرف: در انتظار ثبت ترافیک</string>
