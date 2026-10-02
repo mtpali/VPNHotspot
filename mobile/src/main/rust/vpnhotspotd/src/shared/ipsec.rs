@@ -572,6 +572,8 @@ mUserResourceTracker:
             primary_network: Some(1),
             primary_routes: Vec::<Ipv6Cidr>::new(),
             fallback_network: None,
+            primary_dns_servers: Vec::new(),
+            fallback_dns_servers: Vec::new(),
             primary_upstream_interfaces: primary_upstream_interfaces
                 .into_iter()
                 .map(str::to_owned)

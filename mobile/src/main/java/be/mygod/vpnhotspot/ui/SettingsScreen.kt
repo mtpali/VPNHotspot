@@ -6,6 +6,7 @@ import android.net.ConnectivityManager
 import android.net.LinkProperties
 import android.net.Network
 import android.net.NetworkCapabilities
+import android.os.Build
 import android.text.Html
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
@@ -270,17 +271,17 @@ fun SettingsScreen(snackbarHostState: SnackbarHostState) {
                         stringResource(R.string.settings_service_wifi_lock_none),
                         stringResource(R.string.settings_service_wifi_lock_high_perf_v29),
                         stringResource(R.string.settings_service_wifi_lock_low_latency),
-                    ),
+                    ).let { if (Build.VERSION.SDK_INT < 29) it.take(2) else it },
                     entrySummaries = listOf(
                         annotatedStringResource(R.string.settings_service_wifi_lock_none_summary),
                         annotatedStringResource(R.string.settings_service_wifi_lock_high_perf_v29_summary),
                         annotatedStringResource(R.string.settings_service_wifi_lock_low_latency_summary),
-                    ),
+                    ).let { if (Build.VERSION.SDK_INT < 29) it.take(2) else it },
                     values = listOf(
                         WifiDoubleLock.Mode.None,
                         WifiDoubleLock.Mode.HighPerf,
                         WifiDoubleLock.Mode.LowLatency,
-                    ),
+                    ).let { if (Build.VERSION.SDK_INT < 29) it.take(2) else it },
                     selectedValue = wifiLockMode,
                     onValueChange = {
                         wifiLockMode = it

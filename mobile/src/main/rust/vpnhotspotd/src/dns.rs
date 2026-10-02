@@ -1,13 +1,10 @@
 use std::collections::HashMap;
 use std::io;
 use std::net::{Ipv4Addr, TcpListener, UdpSocket};
-use std::os::fd::{AsRawFd, RawFd};
 use std::sync::Arc;
 
-use libc::c_int;
 use socket2::SockRef;
-use tokio::io::unix::AsyncFd;
-use tokio::io::{AsyncReadExt, AsyncWriteExt, Interest, Ready};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{
     TcpListener as TokioTcpListener, TcpStream as TokioTcpStream, UdpSocket as TokioUdpSocket,
 };
@@ -16,18 +13,16 @@ use tokio::{select, spawn};
 use tokio_util::sync::CancellationToken;
 
 use crate::report;
-use crate::socket::{
-    is_connection_closed, is_route_unreachable, is_udp_reply_unreachable, set_nonblocking,
-};
+use crate::socket::{is_connection_closed, is_route_unreachable, is_udp_reply_unreachable};
 use vpnhotspotd::shared::dns_counter::DnsCounters;
 use vpnhotspotd::shared::dns_wire;
-use vpnhotspotd::shared::model::{mac_string, ClientDnsPorts, Network, SessionConfig};
+use vpnhotspotd::shared::model::{mac_string, ClientDnsPorts, SessionConfig};
 use vpnhotspotd::shared::proto::daemon;
 use vpnhotspotd::shared::protocol::daemon_io_error_report_with_details;
 
+mod resolver;
+
 pub(crate) const DNS_PORT: u16 = 53;
-// android/multinetwork.h: ResNsendFlags::ANDROID_RESOLV_NO_RETRY.
-const ANDROID_RESOLV_NO_RETRY: u32 = 1 << 0;
 // Maximum DNS message size carried over TCP or EDNS0 UDP.
 const DNS_MAX_PACKET: usize = 65_535;
 
@@ -258,54 +253,6 @@ fn report_start_error(
     );
 }
 
-struct ResolverQuery {
-    fd: Option<RawFd>,
-}
-
-impl ResolverQuery {
-    fn finish(mut self) -> io::Result<Vec<u8>> {
-        let mut rcode = 0;
-        let mut response = vec![0u8; DNS_MAX_PACKET];
-        let size = unsafe {
-            android_res_nresult(
-                self.fd.take().unwrap(),
-                &mut rcode,
-                response.as_mut_ptr(),
-                response.len(),
-            )
-        };
-        if size < 0 {
-            Err(io::Error::from_raw_os_error(-size))
-        } else {
-            response.truncate(size as usize);
-            Ok(response)
-        }
-    }
-}
-
-impl AsRawFd for ResolverQuery {
-    fn as_raw_fd(&self) -> RawFd {
-        self.fd.unwrap()
-    }
-}
-
-impl Drop for ResolverQuery {
-    fn drop(&mut self) {
-        if let Some(fd) = self.fd.take() {
-            unsafe {
-                android_res_cancel(fd);
-            }
-        }
-    }
-}
-
-#[link(name = "android")]
-unsafe extern "C" {
-    fn android_res_nsend(network: u64, msg: *const u8, msglen: usize, flags: u32) -> c_int;
-    fn android_res_nresult(fd: c_int, rcode: *mut c_int, answer: *mut u8, anslen: usize) -> c_int;
-    fn android_res_cancel(nsend_fd: c_int);
-}
-
 fn create_tcp_listener(reply_mark: u32) -> io::Result<TcpListener> {
     let listener = TcpListener::bind((Ipv4Addr::UNSPECIFIED, 0))?;
     SockRef::from(&listener).set_mark(reply_mark)?;
@@ -506,10 +453,10 @@ async fn resolve_query_accounted(
     query: &[u8],
 ) -> (io::Result<Vec<u8>>, bool) {
     if let Some(primary) = config.primary_network {
-        return query_network(primary, query).await;
+        return resolver::query_network(primary, &config.primary_dns_servers, query).await;
     }
     if let Some(fallback) = config.fallback_network {
-        return query_network(fallback, query).await;
+        return resolver::query_network(fallback, &config.fallback_dns_servers, query).await;
     }
     (
         Err(io::Error::new(
@@ -561,42 +508,4 @@ pub(crate) async fn resolve_or_error_counted(
         report::io("dns.counter", e);
     }
     Some(response.bytes)
-}
-
-async fn query_network(network: Network, query: &[u8]) -> (io::Result<Vec<u8>>, bool) {
-    let fd = unsafe {
-        android_res_nsend(
-            network,
-            query.as_ptr(),
-            query.len(),
-            ANDROID_RESOLV_NO_RETRY,
-        )
-    };
-    if fd < 0 {
-        return (Err(io::Error::from_raw_os_error(-fd)), false);
-    }
-    let fd = ResolverQuery { fd: Some(fd) };
-    if let Err(e) = set_nonblocking(fd.as_raw_fd()) {
-        return (Err(e), true);
-    }
-    let fd = match AsyncFd::new(fd) {
-        Ok(fd) => fd,
-        Err(e) => return (Err(e), true),
-    };
-    (read_resolver_result(fd).await, true)
-}
-
-async fn read_resolver_result(fd: AsyncFd<ResolverQuery>) -> io::Result<Vec<u8>> {
-    // android_res_nresult is the public result reader/closer, but it performs synchronous reads.
-    // dnsproxyd's resnsend handler writes one result and then drops the client socket, so wait for
-    // peer close before handing the nonblocking fd back to the NDK reader.
-    loop {
-        let mut ready = fd.ready(Interest::READABLE | Interest::ERROR).await?;
-        let state = ready.ready();
-        if state.is_read_closed() || state.is_error() {
-            drop(ready);
-            return fd.into_inner().finish();
-        }
-        ready.clear_ready_matching(Ready::READABLE);
-    }
 }

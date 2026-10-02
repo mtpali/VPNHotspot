@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# != 4 ]]; then
-    echo "Usage: $0 KEYSTORE PASSWORD_FILE KEY_ALIAS OUTPUT_DIR" >&2
+if [[ $# != 4 && $# != 5 ]]; then
+    echo "Usage: $0 KEYSTORE PASSWORD_FILE KEY_ALIAS OUTPUT_DIR [COMMA_SEPARATED_ABIS]" >&2
     exit 2
 fi
 repo_dir="$(cd "$(dirname "$0")/.." && pwd)"
@@ -18,7 +18,12 @@ alias_name="$3"
 mkdir -p "$4"
 output_dir="$(realpath "$4")"
 
-for abi in armeabi-v7a arm64-v8a; do
+IFS=',' read -r -a abis <<< "${5:-armeabi-v7a,arm64-v8a}"
+for abi in "${abis[@]}"; do
+    case "$abi" in
+        armeabi-v7a|arm64-v8a) ;;
+        *) echo "Unsupported release ABI: $abi" >&2; exit 2 ;;
+    esac
     input="$repo_dir/mobile/build/outputs/apk/release/mobile-$abi-release-unsigned.apk"
     [[ -f "$input" ]] || { echo "Build :mobile:assembleRelease first: missing $input" >&2; exit 1; }
     suffix=arm64

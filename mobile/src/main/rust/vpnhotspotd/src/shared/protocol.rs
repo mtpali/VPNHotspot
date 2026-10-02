@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fmt;
 use std::io;
-use std::net::{Ipv4Addr, Ipv6Addr};
+use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV6};
 use std::panic::Location;
 use std::process;
 
@@ -299,12 +299,41 @@ pub fn read_session_config(config: daemon::SessionConfig) -> io::Result<SessionC
         primary_network: config.primary_network.filter(|network| *network != 0),
         primary_routes,
         fallback_network: config.fallback_network.filter(|network| *network != 0),
+        primary_dns_servers: config
+            .primary_dns_servers
+            .iter()
+            .map(read_dns_server)
+            .collect::<io::Result<_>>()?,
+        fallback_dns_servers: config
+            .fallback_dns_servers
+            .iter()
+            .map(read_dns_server)
+            .collect::<io::Result<_>>()?,
         primary_upstream_interfaces: config.primary_upstream_interfaces,
         fallback_upstream_interfaces: config.fallback_upstream_interfaces,
         upstream_generation: config.upstream_generation,
         clients,
         ipv6_nat,
     })
+}
+
+fn read_dns_server(server: &daemon::DnsServer) -> io::Result<SocketAddr> {
+    match server.address.len() {
+        4 => Ok(SocketAddr::from((
+            read_ipv4(&server.address, "DNS server")?,
+            53,
+        ))),
+        16 => Ok(SocketAddrV6::new(
+            read_ipv6(&server.address, "DNS server")?,
+            53,
+            0,
+            server.scope_id,
+        )
+        .into()),
+        length => Err(invalid_data(format!(
+            "invalid DNS server address length {length}"
+        ))),
+    }
 }
 
 fn read_client(client: daemon::ClientConfig) -> io::Result<ClientConfig> {
@@ -435,6 +464,42 @@ mod tests {
                 value: "iptables-restore".to_owned(),
             }],
         }
+    }
+
+    #[test]
+    fn read_session_config_preserves_network_dns_addresses_and_ipv6_scope() {
+        let config = read_session_config(daemon::SessionConfig {
+            primary_dns_servers: vec![daemon::DnsServer {
+                address: vec![192, 0, 2, 53],
+                scope_id: 0,
+            }],
+            fallback_dns_servers: vec![daemon::DnsServer {
+                address: "fe80::53".parse::<Ipv6Addr>().unwrap().octets().to_vec(),
+                scope_id: 7,
+            }],
+            ..Default::default()
+        })
+        .unwrap();
+        assert_eq!(
+            config.primary_dns_servers,
+            vec!["192.0.2.53:53".parse::<SocketAddr>().unwrap()]
+        );
+        assert_eq!(
+            config.fallback_dns_servers,
+            vec![SocketAddrV6::new("fe80::53".parse().unwrap(), 53, 0, 7).into()]
+        );
+    }
+
+    #[test]
+    fn read_session_config_rejects_malformed_dns_addresses() {
+        let result = read_session_config(daemon::SessionConfig {
+            primary_dns_servers: vec![daemon::DnsServer {
+                address: vec![1, 2, 3],
+                scope_id: 0,
+            }],
+            ..Default::default()
+        });
+        assert_eq!(result.unwrap_err().kind(), io::ErrorKind::InvalidData);
     }
 
     #[test]

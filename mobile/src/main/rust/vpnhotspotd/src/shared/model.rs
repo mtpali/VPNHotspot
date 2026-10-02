@@ -1,4 +1,4 @@
-use std::net::{Ipv4Addr, Ipv6Addr};
+use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use cidr::{Ipv6Cidr, Ipv6Inet};
 
@@ -105,6 +105,8 @@ pub struct SessionConfig {
     pub primary_network: Option<Network>,
     pub primary_routes: Vec<Ipv6Cidr>,
     pub fallback_network: Option<Network>,
+    pub primary_dns_servers: Vec<SocketAddr>,
+    pub fallback_dns_servers: Vec<SocketAddr>,
     pub primary_upstream_interfaces: Vec<String>,
     pub fallback_upstream_interfaces: Vec<String>,
     pub upstream_generation: u64,
@@ -449,6 +451,8 @@ mod tests {
             primary_network,
             primary_routes,
             fallback_network,
+            primary_dns_servers: Vec::new(),
+            fallback_dns_servers: Vec::new(),
             primary_upstream_interfaces: Vec::new(),
             fallback_upstream_interfaces: Vec::new(),
             upstream_generation: 0,

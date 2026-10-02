@@ -19,6 +19,7 @@ import be.mygod.vpnhotspot.root.IpSecForwardPolicyCommand
 import be.mygod.vpnhotspot.root.RootManager
 import be.mygod.vpnhotspot.root.daemon.ClientConfig
 import be.mygod.vpnhotspot.root.daemon.DaemonController
+import be.mygod.vpnhotspot.root.daemon.DnsServer
 import be.mygod.vpnhotspot.root.daemon.Ipv6NatConfig
 import be.mygod.vpnhotspot.root.daemon.Ipv6Prefix
 import be.mygod.vpnhotspot.root.daemon.MasqueradeMode
@@ -318,6 +319,12 @@ class Routing(private val caller: Any, private val downstream: String) {
                 } else null
             } ?: emptyList(),
             fallback_network = fallbackUpstream.upstream?.network?.networkHandle,
+            primary_dns_servers = primaryUpstream.upstream?.properties?.dnsServers?.map {
+                DnsServer(it.address.toByteString(), (it as? Inet6Address)?.scopeId ?: 0)
+            } ?: emptyList(),
+            fallback_dns_servers = fallbackUpstream.upstream?.properties?.dnsServers?.map {
+                DnsServer(it.address.toByteString(), (it as? Inet6Address)?.scopeId ?: 0)
+            } ?: emptyList(),
             primary_upstream_interfaces = primaryInterfaces,
             fallback_upstream_interfaces = fallbackInterfaces,
             upstream_generation = upstreamGeneration,

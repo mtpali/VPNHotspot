@@ -26,10 +26,11 @@ use ndc::{add_ip_forward, remove_ip_forward, run_ndc};
 use netlink_commands::{delete_rule_repeated, IpCommand, IpFamily};
 
 // AOSP local-network/tethering priorities are 20000/21000 since Android 12 and
-// 17000/18000 on Android 10/11. Keep VPNHotspot rules inside that gap.
+// 17000/18000 on Android 9/10/11. Keep VPNHotspot rules inside that gap.
 // This also works for Wi-Fi direct where there's no system tethering rule to override.
 //
 // Sources:
+// https://android.googlesource.com/platform/system/netd/+/android-9.0.0_r1/server/RouteController.cpp#64
 // https://android.googlesource.com/platform/system/netd/+/android-10.0.0_r1/server/RouteController.cpp#65
 // https://android.googlesource.com/platform/system/netd/+/android-17.0.0_r1/server/RouteController.h#49
 const RULE_PRIORITY_DAEMON_BASE: u32 = 20600;

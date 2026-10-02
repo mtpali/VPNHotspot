@@ -283,7 +283,7 @@ External mutations:
 - replace IPv6 local route in table 900:
   `local ::/0 dev lo table 900`
 - NAT66 daemon policy-rule priority is `20600` on API 31+ and `17600` on
-  API 29..30.
+  API 28..30.
 - in protocol-rule mode, replace one IPv6 policy rule per active NAT66
   listener protocol:
   - TCP listener present:
@@ -710,15 +710,18 @@ Unexpected restore failures are reported.
 VPNHotspot policy rules live in the gap between AOSP local-network and
 tethering rules. The code names four base priorities:
 
-| Role | Android 12+ | Android 10/11 |
+| Role | Android 12+ | Android 9/10/11 |
 | --- | ---: | ---: |
 | NAT66 daemon table lookup | `20600` | `17600` |
 | Primary upstream table lookup | `20700` | `17700` |
 | Fallback upstream table lookup | `20800` | `17800` |
 | Downstream unreachable guard | `20900` | `17900` |
 
-Android 10 and 11 use the same bases minus `3000` because AOSP local-network
-and tethering priorities were lower before Android 12.
+Android 9, 10 and 11 use the same bases minus `3000` because AOSP local-network
+and tethering priorities were lower before Android 12. Android 9 has the same
+17000/18000 values, verified in AOSP `android-9.0.0_r1`
+`system/netd/server/RouteController.cpp` lines 64–65. No rule shapes, priority
+selection, Stop/Clean behavior or process-death cleanup changed.
 
 The daemon uses these table conventions:
 

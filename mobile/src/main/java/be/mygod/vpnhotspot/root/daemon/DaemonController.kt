@@ -2,6 +2,7 @@ package be.mygod.vpnhotspot.root.daemon
 
 import android.net.LocalServerSocket
 import android.os.ParcelFileDescriptor
+import android.os.Build
 import android.os.Process
 import android.system.ErrnoException
 import android.system.OsConstants
@@ -63,6 +64,10 @@ object DaemonController {
     private var daemonCommandAbiChecked = false
 
     /**
+     * API 28 executes the extracted native binary using its ELF interpreter. Direct invocation
+     * of the linker itself only prints a help message on Android 9:
+     * https://android.googlesource.com/platform/bionic/+/android-9.0.0_r1/linker/linker_main.cpp#584
+     * APK packaging therefore extracts native libraries on all supported versions.
      * Android 10 bionic supports direct linker execution of uncompressed, page-aligned zip entries:
      * https://android.googlesource.com/platform/bionic/+/android-10.0.0_r7/linker/linker_main.cpp#663
      * Android 10 DexPathList returns zip native-library paths only for stored entries:
@@ -70,7 +75,9 @@ object DaemonController {
      */
     private val daemonCommand by lazy {
         val path = (app.classLoader as BaseDexClassLoader).findLibrary(BINARY_NAME) ?: error("Daemon binary missing")
-        listOf(if (Process.is64Bit()) "/system/bin/linker64" else "/system/bin/linker", path)
+        if (Build.VERSION.SDK_INT < 29) listOf(path) else {
+            listOf(if (Process.is64Bit()) "/system/bin/linker64" else "/system/bin/linker", path)
+        }
     }
 
     class SessionCall(val id: Long, val events: Flow<EventFrame>) {
@@ -128,7 +135,7 @@ object DaemonController {
         Timber.d("Starting $BINARY_NAME")
         val command = daemonCommand
         if (!daemonCommandAbiChecked) {
-            DaemonAbi.check(command[1])
+            DaemonAbi.check(command.last())
             daemonCommandAbiChecked = true
         }
         daemonStdioClosing = false

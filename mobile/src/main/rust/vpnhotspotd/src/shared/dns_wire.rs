@@ -6,6 +6,26 @@ const FLAGS_OPCODE_MASK: u8 = 0x78;
 const FLAGS_AD_CD_MASK: u8 = 0x30;
 const RCODE_SERVFAIL: u8 = 2;
 
+/// Match responses to the original transaction and question before accepting a connected UDP
+/// datagram or TCP frame. In particular, an ID match alone must not accept a different question.
+pub fn response_matches_query(query: &[u8], response: &[u8]) -> bool {
+    if query.len() < HEADER_LEN || response.len() < HEADER_LEN || response[2] & FLAG_RESPONSE == 0 {
+        return false;
+    }
+    if query[..2] != response[..2]
+        || query[4..6] != response[4..6]
+        || query[2] & FLAGS_OPCODE_MASK != response[2] & FLAGS_OPCODE_MASK
+    {
+        return false;
+    }
+    match (question_section_end(query), question_section_end(response)) {
+        (Some(query_end), Some(response_end)) => {
+            query[HEADER_LEN..query_end] == response[HEADER_LEN..response_end]
+        }
+        _ => false,
+    }
+}
+
 pub fn servfail_response(query: &[u8]) -> Option<Vec<u8>> {
     if query.len() < HEADER_LEN || query[2] & FLAG_RESPONSE != 0 {
         return None;
@@ -66,7 +86,24 @@ fn name_end(packet: &[u8], mut offset: usize) -> Option<usize> {
 
 #[cfg(test)]
 mod tests {
-    use super::servfail_response;
+    use super::{response_matches_query, servfail_response};
+
+    #[test]
+    fn response_matching_checks_id_question_and_response_flag() {
+        let query = [
+            0x12, 0x34, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, b'a', 0, 0, 1, 0, 1,
+        ];
+        let mut response = servfail_response(&query).unwrap();
+        assert!(response_matches_query(&query, &response));
+        response[0] ^= 1;
+        assert!(!response_matches_query(&query, &response));
+        response[0] ^= 1;
+        response[13] = b'b';
+        assert!(!response_matches_query(&query, &response));
+        assert!(!response_matches_query(&query, &query));
+        assert!(!response_matches_query(&query, &response[..12]));
+        assert!(!response_matches_query(&[], &response));
+    }
 
     #[test]
     fn error_response_preserves_question() {

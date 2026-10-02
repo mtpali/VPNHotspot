@@ -45,7 +45,9 @@ by actual upstream interface.
 
 ## Resolver Handoff
 
-DNS queries are sent through bionic's Android resolver API:
+On API 29+, DNS queries are sent through bionic's Android resolver API. The
+three function pointers are resolved once with `dlsym` only on that runtime;
+there are no strong ELF imports of functions absent on Android 9:
 
 - `android_res_nsend` starts a one-shot query on the selected Android network;
 - `android_res_nresult` reads and closes the result;
@@ -70,6 +72,37 @@ Locally generated DNS errors are client responses, not resolver responses. If
 no resolver query is handed to Android, the daemon returns the client-visible
 error without increasing DNS counters. If `android_res_nsend` accepts a query
 but no resolver response is returned, only the sent query side is counted.
+
+## Android 9 DNS
+
+API 28 has no `android_res_nsend`/`android_res_nresult`/`android_res_cancel`.
+Kotlin includes the primary and fallback networks' `LinkProperties.dnsServers`
+(including IPv6 scope IDs) in each session config. For the same selected network
+as the normal resolver path, the daemon:
+
+- creates a nonblocking UDP socket and binds it to that network with the public
+  `android_setsocknetwork` API before connecting to a configured DNS address on port 53;
+- sends the original query and accepts only responses matching its ID, opcode,
+  question count and question bytes from that connected peer;
+- retries truncated UDP answers over length-prefixed TCP on the same network/server;
+- uses a five-second response deadline per configured server, following RFC 1035's
+  minimum retransmission interval, and then tries the next DNS server of the same network;
+- returns SERVFAIL when the selected network has no servers or all attempts fail.
+
+No public resolver is substituted and failure never causes fallback to a different
+network. Primary-network presence retains precedence over the fallback even when
+its DNS servers are absent or unavailable. This avoids bypassing the selected VPN.
+The Android-9 forwarding path does not inherit system Private DNS/DoT: transport
+is ordinary UDP/TCP inside the selected network, so encrypted transit requires a
+VPN-provided DNS route. Android 10+ keeps the platform resolver behavior.
+
+The sockets exist only for the query future. Listener/session cancellation drops
+that future and closes its sockets; normal completion and timeouts do the same.
+There are no new kernel rules, resolver settings, caches, or persistent files, and
+Clean has no additional DNS state to remove. Unexpected socket/resolver failures
+are emitted as structured nonfatal reports with network/server context and errno.
+DNS counters count a logical query and its accepted answer once, regardless of
+retransmission or TCP fallback, excluding transport headers as on the newer path.
 
 ## TCP DNS
 

@@ -2,6 +2,7 @@ import groovy.json.JsonOutput
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileTree
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
@@ -81,6 +82,9 @@ abstract class BuildDaemonNativeLibsTask : DefaultTask() {
     @get:Input
     abstract val androidPlatform: Property<Int>
 
+    @get:Input
+    abstract val targetAbis: ListProperty<String>
+
     @get:OutputDirectory
     abstract val outputDir: DirectoryProperty
 
@@ -101,11 +105,13 @@ abstract class BuildDaemonNativeLibsTask : DefaultTask() {
             "--remap-path-prefix=${cargoDir.absolutePath}=.",
             "--remap-path-prefix=${cargoDir.absolutePath}/=",
         ).joinToString("\u001F")
-        val targets = listOf(
+        val targets = mapOf(
             "arm64-v8a" to "aarch64-linux-android",
             "armeabi-v7a" to "armv7-linux-androideabi",
+            "x86_64" to "x86_64-linux-android",
         )
-        for ((abi, target) in targets) {
+        for (abi in targetAbis.get()) {
+            val target = targets.getValue(abi)
             val command = mutableListOf("cargo", "ndk", "--target", abi, "--platform", androidPlatform.get().toString(),
                 "build", "--locked", "--bin", "vpnhotspotd").apply {
                 if (profile == "release") add("--release")
@@ -131,6 +137,12 @@ abstract class BuildDaemonNativeLibsTask : DefaultTask() {
 }
 
 val javaVersion = 11
+val requestedAbis = providers.gradleProperty("targetAbis").orElse("armeabi-v7a,arm64-v8a")
+    .map { it.split(',').also { abis ->
+        require(abis.isNotEmpty() && abis.all { abi -> abi in listOf("armeabi-v7a", "arm64-v8a", "x86_64") }) {
+            "targetAbis must contain supported Android ABIs"
+        }
+    } }
 android {
     namespace = "be.mygod.vpnhotspot"
 
@@ -142,10 +154,10 @@ android {
     buildToolsVersion = "37.0.0"
     defaultConfig {
         applicationId = "be.mygod.vpnhotspot"
-        minSdk = 29
+        minSdk = 28
         targetSdk = 37
-        versionCode = 2014
-        versionName = "3.0.8"
+        versionCode = 2015
+        versionName = "3.0.8-oled.3"
         resourceConfigurations += "en"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -153,7 +165,7 @@ android {
         abi {
             isEnable = true
             reset()
-            include("arm64-v8a", "armeabi-v7a")
+            include(*requestedAbis.get().toTypedArray())
             isUniversalApk = false
         }
     }
@@ -174,6 +186,8 @@ android {
         "**/*.kotlin_*",
         "META-INF/versions/**",
     )
+    // API 28's linker cannot run executables directly from an APK ZIP entry.
+    packaging.jniLibs.useLegacyPackaging = true
     lint.warning += "FullBackupContent"
     lint.warning += "UnsafeOptInUsageError"
     sourceSets.getByName("androidTest").assets.directories.add("$projectDir/schemas")
@@ -214,6 +228,7 @@ androidComponents.onVariants { variant ->
         protoDir.set(layout.projectDirectory.dir("src/main/proto"))
         cargoProfile.set(if (variant.buildType == "release") "release" else "debug")
         androidPlatform.set(android.defaultConfig.minSdk!!)
+        targetAbis.set(requestedAbis)
         outputDir.set(layout.buildDirectory.dir("generated/nativeLibs/daemon/${variant.name}"))
         targetDir.set(layout.buildDirectory.dir("rust/vpnhotspotd"))
     }
@@ -254,4 +269,5 @@ dependencies {
     androidTestImplementation(libs.junit.ktx)
     androidTestImplementation(libs.room.testing)
     androidTestImplementation(libs.test.runner)
+    androidTestImplementation("androidx.test:core:1.7.0")
 }

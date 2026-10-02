@@ -3,6 +3,7 @@ package be.mygod.vpnhotspot.net.wifi
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.os.PowerManager
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -21,7 +22,9 @@ class WifiDoubleLock(lockType: Int) : AutoCloseable {
         private const val KEY = "service.wifiLock"
         var mode: Mode
             get() = try {
-                Mode.valueOf(app.pref.getString(KEY, Mode.None.toString()) ?: "")
+                Mode.valueOf(app.pref.getString(KEY, Mode.None.toString()) ?: "").let {
+                    if (Build.VERSION.SDK_INT < 29 && it == Mode.LowLatency) Mode.HighPerf else it
+                }
             } catch (_: IllegalArgumentException) {
                 Mode.None
             }
@@ -61,7 +64,10 @@ class WifiDoubleLock(lockType: Int) : AutoCloseable {
         None,
         @Suppress("DEPRECATION")
         HighPerf(WifiManager.WIFI_MODE_FULL_HIGH_PERF),
-        LowLatency(WifiManager.WIFI_MODE_FULL_LOW_LATENCY, true),
+        LowLatency(if (Build.VERSION.SDK_INT >= 29) WifiManager.WIFI_MODE_FULL_LOW_LATENCY else {
+            @Suppress("DEPRECATION")
+            WifiManager.WIFI_MODE_FULL_HIGH_PERF
+        }, true),
     }
 
     class ActivityListener(private val activity: ComponentActivity) :

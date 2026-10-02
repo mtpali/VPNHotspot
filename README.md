@@ -4,8 +4,10 @@ Custom fork of [Mygod/VPNHotspot v3.0.8](https://github.com/Mygod/VPNHotspot/rel
 based on commit `20ed65762517c801f87cb87e17e70316c072b444`.
 Apache-2.0 licensed; original author attribution and third-party notices are retained.
 
-Android 10 (API 29) or newer and root access are required for VPN sharing and traffic accounting.
-Two release APKs target `armeabi-v7a` and `arm64-v8a`; both use the same custom release certificate.
+Android 9 (API 28) or newer and root access are required for VPN sharing and traffic accounting.
+The default build targets `armeabi-v7a` and `arm64-v8a`; this delivery builds only `armeabi-v7a`.
+Version `3.0.8-oled.3` (code 2015) is signed with a newly generated custom release certificate.
+It cannot update the previous custom build signed with the earlier key.
 This certificate differs from upstream, so the custom APK cannot update the original signed app in place.
 Stop active VPN tethering before uninstalling or switching builds.
 
@@ -37,6 +39,14 @@ Stop active VPN tethering before uninstalling or switching builds.
 - R8 full mode, name obfuscation, optimized resource shrinking, ABI splits and stripped Rust native binaries.
   Room schema 3 adds a MAC index while retaining existing statistics.
 - Native build input tracking excludes Cargo target caches, avoiding unnecessary rebuilds.
+- Android 9 support: native binaries are built for API 28, compressed and extracted at install time.
+  API 28 runs the extracted ELF directly; newer versions retain the linker launcher.
+  Raw resolver functions introduced in Android 10 are loaded only on API 29+; Android 9 sends
+  DNS queries to the selected network's configured DNS servers using network-bound UDP/TCP.
+  It never substitutes public DNS or retries on a different upstream network. Android 9 does not
+  inherit system Private DNS/DoT for these forwarded queries; use a VPN-provided DNS server
+  for encrypted transit. See `docs/vpnhotspotd/dns.md`.
+  Low latency Wi-Fi mode is hidden on API 28; a restored setting falls back to high performance.
 
 ## Build
 
@@ -49,8 +59,12 @@ cargo install cargo-ndk --version 4.1.2 --locked
 ```
 
 Set `ANDROID_HOME` and `ANDROID_NDK_HOME`, or use Android Studio SDK settings.
-The two unsigned release APKs are in `mobile/build/outputs/apk/release/`.
+To build only armv7, pass `-PtargetAbis=armeabi-v7a`. Native compilation and APK splits use the
+same ABI selection, avoiding unused native builds. `x86_64` is available for emulator tests only.
+
+Unsigned release APKs are in `mobile/build/outputs/apk/release/`.
 Use `scripts/sign-release-apks.sh` with your private keystore to zipalign, sign and verify both APKs.
+When building only armv7, pass `armeabi-v7a` as its optional fifth argument.
 No signing key/password is stored in this public repository. Retain the delivered signing backup privately
 to produce compatible future updates. R8 mapping is generated in `mobile/build/outputs/mapping/release/`.
 
@@ -166,14 +180,14 @@ Other:
   startup tether-state callbacks from one `executor.execute { ... }` block in `onCallbackStarted`,
   and later tether-state updates from one `executor.execute { ... }` block in
   `onTetherStatesChanged`.
-* The Rust DNS proxy submits upstream queries through `android_res_nsend`/`android_res_nresult`.
+* (since API 29) The Rust DNS proxy submits upstream queries through `android_res_nsend`/`android_res_nresult`.
   To keep daemon tasks nonblocking while still using `android_res_nresult` as the public result
   reader/closer, it waits for `dnsproxyd` to close the one-shot `resnsend` client socket before
   reading the result. This assumes `resnsend` writes the complete resolver result before returning
   and the socket receive buffer can hold that result until the framework socket listener closes the
   client socket.
 * For `ip rule` priorities, AOSP local-network/tethering priorities are assumed to be 17000/18000
-  on API 29..30 and 20000/21000 on API 31+. VPNHotspot uses the 17500..17900 or 20500..20900
+  on API 28..30 and 20000/21000 on API 31+. VPNHotspot uses the 17500..17900 or 20500..20900
   gap between them.
 * For route-table numbers, Android interface tables are assumed to start at ifindex + 1000; `IPv6 NAT`
   TPROXY uses table 900 to stay below that range and away from AOSP fixed tables 97..99 and kernel built-ins.
@@ -197,4 +211,6 @@ The following Android system binaries are assumed to be bundled and executable:
   commands including `-I`, `-D`, `-N`, `-nvx -L <chain>`);
 * `/system/bin/ndc` (`ipfwd`, `nat`);
 * `/system/bin/settings` (`put global`);
-* `/system/bin/linker` or `/system/bin/linker64` (`path.zip!/program`).
+* (since API 29) `/system/bin/linker` or `/system/bin/linker64` (native program path).
+  On API 28, `libvpnhotspotd.so` must be an extracted, executable ELF file under the installed
+  app native-library directory; direct invocation of the linker does not execute it.

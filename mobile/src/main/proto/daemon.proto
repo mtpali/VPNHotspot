@@ -51,6 +51,13 @@ message SessionConfig {
   repeated ClientConfig clients = 10;
   optional Ipv6NatConfig ipv6_nat = 11;
   uint64 upstream_generation = 12;
+  repeated DnsServer primary_dns_servers = 13;
+  repeated DnsServer fallback_dns_servers = 14;
+}
+
+message DnsServer {
+  bytes address = 1;
+  uint32 scope_id = 2;
 }
 
 enum MasqueradeMode {

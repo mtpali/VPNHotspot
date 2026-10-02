@@ -31,7 +31,7 @@ jobs:
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/29.0.14206865" >> "$GITHUB_ENV"
 
       - name: Install Android Rust targets
-        run: rustup target add aarch64-linux-android armv7-linux-androideabi
+        run: rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
 
       - name: Install cargo-ndk
         run: cargo install cargo-ndk --version 4.1.2 --locked
@@ -42,6 +42,10 @@ jobs:
       - name: Check Rust daemon
         working-directory: mobile/src/main/rust/vpnhotspotd
         run: cargo check --locked --all-targets
+
+      - name: Check Rust formatting
+        working-directory: mobile/src/main/rust/vpnhotspotd
+        run: cargo fmt --all -- --check
 
       - name: Run Rust daemon clippy
         working-directory: mobile/src/main/rust/vpnhotspotd
@@ -56,7 +60,7 @@ jobs:
         run: cargo test --locked
 
       - name: Run build and tests
-        run: ./gradlew :mobile:assembleDebug :mobile:testDebugUnitTest :mobile:lintDebug :mobile:assembleRelease --no-daemon
+        run: ./gradlew :mobile:assembleDebug :mobile:testDebugUnitTest :mobile:lintDebug :mobile:assembleRelease -PtargetAbis=armeabi-v7a --no-daemon
 
       - name: Check release shrinking
         run: test -s mobile/build/outputs/mapping/release/mapping.txt
@@ -74,3 +78,27 @@ jobs:
         with:
           name: reports
           path: mobile/build/reports
+
+      - name: Build Android 9 instrumentation APKs
+        run: ./gradlew :mobile:assembleDebug :mobile:assembleDebugAndroidTest -PtargetAbis=x86_64 --no-daemon
+
+      - name: Enable KVM
+        run: sudo chmod 666 /dev/kvm
+
+      - name: Test Android 9 runtime
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 28
+          arch: x86_64
+          target: default
+          disable-animations: true
+          script: ./gradlew :mobile:connectedDebugAndroidTest -PtargetAbis=x86_64 --no-daemon
+
+      - name: Upload Android 9 reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android9-reports
+          path: |
+            mobile/build/reports/androidTests
+            mobile/build/outputs/androidTest-results

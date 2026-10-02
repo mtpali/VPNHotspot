@@ -9,8 +9,14 @@ state and exits.
 
 ## Process Startup
 
-Kotlin locates the native `vpnhotspotd` library in the APK and runs it through
-Android's linker from a root command. It creates:
+Kotlin locates the extracted native `vpnhotspotd` library with `findLibrary`.
+APK packaging compresses native libraries and requests installation-time extraction.
+On API 28, the root command executes that ELF file directly: Android 9's linker does
+not support acting as an executable launcher. On API 29+, the root command runs
+`/system/bin/linker[64] <native-library-path>`. Both paths pass exactly the socket
+name as the daemon argument, apply the same ABI check, and use the same control
+connection ownership and shutdown. No private executable copy or persistent
+startup artifact is created. It creates:
 
 - an abstract Unix-domain server socket name for the control channel;
 - stdout and stderr pipes that are drained into Timber;
